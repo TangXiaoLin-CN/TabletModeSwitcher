@@ -312,13 +312,16 @@ public partial class SettingsForm : Form
 
         // 加载排除列表
         _lstExcluded.Items.Clear();
-        foreach (var deviceId in _settings.ExcludedDeviceIds)
+        if (_settings.ExcludedDeviceIds != null)
         {
-            _lstExcluded.Items.Add(deviceId);
+            foreach (var deviceId in _settings.ExcludedDeviceIds)
+            {
+                _lstExcluded.Items.Add(deviceId);
+            }
         }
 
         // 同步排除列表到 KeyboardWatcher
-        _keyboardWatcher.UpdateExcludedDevices(_settings.ExcludedDeviceIds);
+        _keyboardWatcher.UpdateExcludedDevices(_settings.ExcludedDeviceIds ?? new List<string>());
 
         UpdateStatus();
     }
@@ -435,8 +438,6 @@ public partial class SettingsForm : Form
 
         // 设置开机自启动
         SetStartupRegistry(_settings.RunAtStartup);
-
-        MessageBox.Show($"设置已保存\n排除设备数量: {_settings.ExcludedDeviceIds.Count}", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
         DialogResult = DialogResult.OK;
         Close();

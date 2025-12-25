@@ -10,7 +10,7 @@ public class TrayApplicationContext : ApplicationContext
     private readonly NotifyIcon _trayIcon;
     private readonly KeyboardWatcher _keyboardWatcher;
     private readonly TabletModeController _modeController;
-    private readonly AppSettings _settings;
+    private AppSettings _settings;
     private readonly System.Windows.Forms.Timer _switchTimer;
 
     private bool _pendingSwitchToDesktop = false;
@@ -313,6 +313,9 @@ public class TrayApplicationContext : ApplicationContext
             _settingsForm.Activate();
             return;
         }
+
+        // 每次打开设置窗口时从文件重新加载配置
+        _settings = AppSettings.Load();
 
         _settingsForm = new SettingsForm(_settings, _keyboardWatcher, _modeController);
         if (_settingsForm.ShowDialog() == DialogResult.OK)
