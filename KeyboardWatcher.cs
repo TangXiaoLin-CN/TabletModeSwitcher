@@ -160,12 +160,18 @@ public class KeyboardWatcher : IDisposable
                     if (string.IsNullOrEmpty(deviceId))
                         continue;
 
+                    // 记录所有设备用于调试
+                    System.Diagnostics.Debug.WriteLine($"[Keyboard] {description} | {deviceId}");
+
                     // 过滤虚拟设备
                     if (IsVirtualKeyboard(deviceId, description))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"  -> Filtered out");
                         continue;
+                    }
 
                     newKeyboards.Add(deviceId);
-                    System.Diagnostics.Debug.WriteLine($"发现键盘: {description} ({deviceId})");
+                    System.Diagnostics.Debug.WriteLine($"  -> Accepted");
                 }
             }
             finally
@@ -175,7 +181,7 @@ public class KeyboardWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"扫描键盘失败: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Scan failed: {ex.Message}");
         }
 
         // 更新键盘列表
@@ -193,6 +199,48 @@ public class KeyboardWatcher : IDisposable
         {
             KeyboardCountChanged?.Invoke(this, newCount);
         }
+    }
+
+    /// <summary>
+    /// 获取所有键盘设备信息（用于调试）
+    /// </summary>
+    public List<(string DeviceId, string Description, bool Filtered)> GetAllKeyboardDevices()
+    {
+        var result = new List<(string, string, bool)>();
+
+        try
+        {
+            var guid = GUID_DEVINTERFACE_KEYBOARD;
+            var deviceInfoSet = SetupDiGetClassDevs(ref guid, IntPtr.Zero, IntPtr.Zero,
+                DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+            if (deviceInfoSet == IntPtr.Zero || deviceInfoSet == new IntPtr(-1))
+                return result;
+
+            try
+            {
+                var deviceInfoData = new SP_DEVINFO_DATA { cbSize = Marshal.SizeOf<SP_DEVINFO_DATA>() };
+
+                for (int i = 0; SetupDiEnumDeviceInfo(deviceInfoSet, i, ref deviceInfoData); i++)
+                {
+                    var deviceId = GetDeviceInstanceId(deviceInfoSet, ref deviceInfoData);
+                    var description = GetDeviceProperty(deviceInfoSet, ref deviceInfoData, SPDRP_DEVICEDESC);
+
+                    if (string.IsNullOrEmpty(deviceId))
+                        continue;
+
+                    var filtered = IsVirtualKeyboard(deviceId, description);
+                    result.Add((deviceId, description, filtered));
+                }
+            }
+            finally
+            {
+                SetupDiDestroyDeviceInfoList(deviceInfoSet);
+            }
+        }
+        catch { }
+
+        return result;
     }
 
     private string GetDeviceInstanceId(IntPtr deviceInfoSet, ref SP_DEVINFO_DATA deviceInfoData)

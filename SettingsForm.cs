@@ -325,57 +325,25 @@ public partial class SettingsForm : Form
         _keyboardWatcher.ScanExistingKeyboards();
         _lstKeyboards.Items.Clear();
 
-        // 直接使用 KeyboardWatcher 的数据，不再使用 WMI
-        foreach (var deviceId in _keyboardWatcher.GetConnectedKeyboards())
+        // 显示所有设备（包括被过滤的），方便调试
+        foreach (var (deviceId, description, filtered) in _keyboardWatcher.GetAllKeyboardDevices())
         {
-            // 从设备ID提取简短描述
-            var description = GetDeviceDescription(deviceId);
-            _lstKeyboards.Items.Add(new KeyboardItem(deviceId, description));
+            var displayText = filtered
+                ? $"[Filtered] {description}"
+                : description;
+            _lstKeyboards.Items.Add(new KeyboardItem(deviceId, displayText, filtered));
         }
 
         UpdateStatus();
     }
 
-    private string GetDeviceDescription(string deviceId)
-    {
-        // 从设备ID提取可读的描述
-        // 例如: "HID\VID_046D&PID_C52B&..." -> "HID Keyboard (046D:C52B)"
-        try
-        {
-            if (deviceId.Contains("VID_") && deviceId.Contains("PID_"))
-            {
-                var vidStart = deviceId.IndexOf("VID_") + 4;
-                var vidEnd = deviceId.IndexOf('&', vidStart);
-                var vid = vidEnd > vidStart ? deviceId[vidStart..vidEnd] : deviceId[vidStart..(vidStart + 4)];
-
-                var pidStart = deviceId.IndexOf("PID_") + 4;
-                var pidEnd = deviceId.IndexOf('&', pidStart);
-                var pid = pidEnd > pidStart ? deviceId[pidStart..pidEnd] : deviceId[pidStart..(pidStart + 4)];
-
-                var prefix = deviceId.Split('\\')[0];
-                return $"{prefix} Keyboard ({vid}:{pid})";
-            }
-            else if (deviceId.Contains("BTHENUM"))
-            {
-                return "Bluetooth Keyboard";
-            }
-            else if (deviceId.Contains("USB"))
-            {
-                return "USB Keyboard";
-            }
-        }
-        catch { }
-
-        // 返回设备ID的最后一部分
-        var parts = deviceId.Split('\\');
-        return parts.Length > 1 ? parts[^1] : deviceId;
-    }
-
     private void UpdateStatus()
     {
         var mode = _modeController.IsTabletMode ? "平板模式" : "桌面模式";
-        var keyboardCount = _keyboardWatcher.ConnectedKeyboardCount;
-        _lblStatus.Text = $"当前模式: {mode}\n已检测到 {keyboardCount} 个键盘设备";
+        var allDevices = _keyboardWatcher.GetAllKeyboardDevices();
+        var activeCount = allDevices.Count(d => !d.Filtered);
+        var totalCount = allDevices.Count;
+        _lblStatus.Text = $"当前模式: {mode}\n检测到 {activeCount} 个键盘 (共 {totalCount} 个设备)";
     }
 
     private void BtnRefresh_Click(object? sender, EventArgs e)
@@ -470,13 +438,15 @@ public partial class SettingsForm : Form
     {
         public string DeviceId { get; }
         public string Description { get; }
+        public bool IsFiltered { get; }
 
-        public KeyboardItem(string deviceId, string description)
+        public KeyboardItem(string deviceId, string description, bool isFiltered)
         {
             DeviceId = deviceId;
             Description = description;
+            IsFiltered = isFiltered;
         }
 
-        public override string ToString() => $"{Description}";
+        public override string ToString() => Description;
     }
 }
