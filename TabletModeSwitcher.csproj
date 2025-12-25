@@ -15,8 +15,4 @@
     <Description>自动检测键盘连接并切换Windows 11平板模式任务栏</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Management" Version="8.0.0" />
-  </ItemGroup>
-
 </Project>
