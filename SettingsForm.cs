@@ -325,17 +325,26 @@ public partial class SettingsForm : Form
         _keyboardWatcher.ScanExistingKeyboards();
         _lstKeyboards.Items.Clear();
 
-        // 显示所有设备（包括被过滤的），方便调试
-        foreach (var (deviceId, description, filtered, excluded) in _keyboardWatcher.GetAllKeyboardDevices())
+        // 获取当前排除列表中的设备ID
+        var excludedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in _lstExcluded.Items)
         {
+            excludedIds.Add(id);
+        }
+
+        // 只显示未被系统过滤且未被用户排除的设备
+        foreach (var (deviceId, description, filtered, _) in _keyboardWatcher.GetAllKeyboardDevices())
+        {
+            // 跳过已排除的设备
+            if (excludedIds.Contains(deviceId))
+                continue;
+
             string displayText;
             if (filtered)
                 displayText = $"[系统] {description}";
-            else if (excluded)
-                displayText = $"[已排除] {description}";
             else
                 displayText = description;
-            _lstKeyboards.Items.Add(new KeyboardItem(deviceId, displayText, filtered || excluded));
+            _lstKeyboards.Items.Add(new KeyboardItem(deviceId, displayText, filtered));
         }
 
         UpdateStatus();
@@ -345,7 +354,15 @@ public partial class SettingsForm : Form
     {
         var mode = _modeController.IsTabletMode ? "平板模式" : "桌面模式";
         var allDevices = _keyboardWatcher.GetAllKeyboardDevices();
-        var activeCount = allDevices.Count(d => !d.Filtered && !d.Excluded);
+
+        // 获取当前排除列表
+        var excludedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in _lstExcluded.Items)
+        {
+            excludedIds.Add(id);
+        }
+
+        var activeCount = allDevices.Count(d => !d.Filtered && !excludedIds.Contains(d.DeviceId));
         var totalCount = allDevices.Count;
         _lblStatus.Text = $"当前模式: {mode}\n检测到 {activeCount} 个有效键盘 (共 {totalCount} 个设备)";
     }
@@ -362,6 +379,8 @@ public partial class SettingsForm : Form
             if (!_lstExcluded.Items.Contains(item.DeviceId))
             {
                 _lstExcluded.Items.Add(item.DeviceId);
+                // 刷新键盘列表，移除已排除的设备
+                RefreshKeyboardList();
             }
         }
         else
@@ -375,6 +394,8 @@ public partial class SettingsForm : Form
         if (_lstExcluded.SelectedItem != null)
         {
             _lstExcluded.Items.Remove(_lstExcluded.SelectedItem);
+            // 刷新键盘列表，显示恢复的设备
+            RefreshKeyboardList();
         }
     }
 
