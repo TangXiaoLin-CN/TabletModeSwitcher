@@ -79,6 +79,7 @@ public class KeyboardWatcher : IDisposable
     private bool _disposed;
     private System.Threading.Timer? _debounceTimer;
     private volatile bool _pendingRefresh;
+    private HashSet<string> _excludedDeviceIds = new(StringComparer.OrdinalIgnoreCase);
 
     public event EventHandler<KeyboardEventArgs>? KeyboardConnected;
     public event EventHandler<KeyboardEventArgs>? KeyboardDisconnected;
@@ -98,6 +99,23 @@ public class KeyboardWatcher : IDisposable
     public bool HasKeyboardConnected
     {
         get { lock (_lock) return _connectedKeyboards.Count > 0; }
+    }
+
+    /// <summary>
+    /// 更新排除的设备ID列表
+    /// </summary>
+    public void UpdateExcludedDevices(IEnumerable<string> excludedIds)
+    {
+        lock (_lock)
+        {
+            _excludedDeviceIds.Clear();
+            foreach (var id in excludedIds)
+            {
+                _excludedDeviceIds.Add(id);
+            }
+        }
+        // 重新扫描以应用新的排除列表
+        ScanExistingKeyboards();
     }
 
     /// <summary>
@@ -166,7 +184,19 @@ public class KeyboardWatcher : IDisposable
                     // 过滤虚拟设备
                     if (IsVirtualKeyboard(deviceId, description))
                     {
-                        System.Diagnostics.Debug.WriteLine($"  -> Filtered out");
+                        System.Diagnostics.Debug.WriteLine($"  -> Filtered out (virtual)");
+                        continue;
+                    }
+
+                    // 检查是否在排除列表中
+                    bool isExcluded;
+                    lock (_lock)
+                    {
+                        isExcluded = _excludedDeviceIds.Contains(deviceId);
+                    }
+                    if (isExcluded)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"  -> Excluded by user");
                         continue;
                     }
 
@@ -204,9 +234,9 @@ public class KeyboardWatcher : IDisposable
     /// <summary>
     /// 获取所有键盘设备信息（用于调试）
     /// </summary>
-    public List<(string DeviceId, string Description, bool Filtered)> GetAllKeyboardDevices()
+    public List<(string DeviceId, string Description, bool Filtered, bool Excluded)> GetAllKeyboardDevices()
     {
-        var result = new List<(string, string, bool)>();
+        var result = new List<(string, string, bool, bool)>();
 
         try
         {
@@ -230,7 +260,12 @@ public class KeyboardWatcher : IDisposable
                         continue;
 
                     var filtered = IsVirtualKeyboard(deviceId, description);
-                    result.Add((deviceId, description, filtered));
+                    bool excluded;
+                    lock (_lock)
+                    {
+                        excluded = _excludedDeviceIds.Contains(deviceId);
+                    }
+                    result.Add((deviceId, description, filtered, excluded));
                 }
             }
             finally

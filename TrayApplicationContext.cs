@@ -22,6 +22,9 @@ public class TrayApplicationContext : ApplicationContext
         _modeController.UseTaskbarAutoHide = _settings.UseTaskbarAutoHide;
         _keyboardWatcher = new KeyboardWatcher();
 
+        // 初始化排除列表
+        _keyboardWatcher.UpdateExcludedDevices(_settings.ExcludedDeviceIds);
+
         // 防抖动定时器
         _switchTimer = new System.Windows.Forms.Timer { Interval = _settings.SwitchDelayMs };
         _switchTimer.Tick += OnSwitchTimerTick;

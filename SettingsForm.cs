@@ -42,8 +42,11 @@ public partial class SettingsForm : Form
 
         // 窗口设置
         Text = "平板模式切换器 - 设置";
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96F, 96F);
         Size = new Size(500, 520);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MinimumSize = new Size(450, 480);
+        FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Microsoft YaHei UI", 9F);
@@ -181,7 +184,8 @@ public partial class SettingsForm : Form
         {
             Location = new Point(20, 40),
             Size = new Size(300, 120),
-            SelectionMode = SelectionMode.One
+            SelectionMode = SelectionMode.One,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         tabDevices.Controls.Add(_lstKeyboards);
 
@@ -189,7 +193,8 @@ public partial class SettingsForm : Form
         {
             Text = "刷新列表",
             Location = new Point(330, 40),
-            Size = new Size(90, 30)
+            Size = new Size(90, 30),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
         _btnRefresh.Click += BtnRefresh_Click;
         tabDevices.Controls.Add(_btnRefresh);
@@ -198,7 +203,8 @@ public partial class SettingsForm : Form
         {
             Text = "添加到排除 ↓",
             Location = new Point(330, 80),
-            Size = new Size(90, 30)
+            Size = new Size(90, 30),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
         _btnAddExclude.Click += BtnAddExclude_Click;
         tabDevices.Controls.Add(_btnAddExclude);
@@ -216,7 +222,8 @@ public partial class SettingsForm : Form
         {
             Location = new Point(20, 195),
             Size = new Size(300, 120),
-            SelectionMode = SelectionMode.One
+            SelectionMode = SelectionMode.One,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         tabDevices.Controls.Add(_lstExcluded);
 
@@ -224,7 +231,8 @@ public partial class SettingsForm : Form
         {
             Text = "移除排除",
             Location = new Point(330, 195),
-            Size = new Size(90, 30)
+            Size = new Size(90, 30),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
         _btnRemoveExclude.Click += BtnRemoveExclude_Click;
         tabDevices.Controls.Add(_btnRemoveExclude);
@@ -235,7 +243,8 @@ public partial class SettingsForm : Form
             Text = "提示: 如果您有某些键盘设备不想触发模式切换（如蓝牙遥控器等），\n可以将其添加到排除列表。",
             Location = new Point(20, 330),
             Size = new Size(400, 40),
-            ForeColor = Color.Gray
+            ForeColor = Color.Gray,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         tabDevices.Controls.Add(lblHint);
 
@@ -326,12 +335,16 @@ public partial class SettingsForm : Form
         _lstKeyboards.Items.Clear();
 
         // 显示所有设备（包括被过滤的），方便调试
-        foreach (var (deviceId, description, filtered) in _keyboardWatcher.GetAllKeyboardDevices())
+        foreach (var (deviceId, description, filtered, excluded) in _keyboardWatcher.GetAllKeyboardDevices())
         {
-            var displayText = filtered
-                ? $"[Filtered] {description}"
-                : description;
-            _lstKeyboards.Items.Add(new KeyboardItem(deviceId, displayText, filtered));
+            string displayText;
+            if (filtered)
+                displayText = $"[系统] {description}";
+            else if (excluded)
+                displayText = $"[已排除] {description}";
+            else
+                displayText = description;
+            _lstKeyboards.Items.Add(new KeyboardItem(deviceId, displayText, filtered || excluded));
         }
 
         UpdateStatus();
@@ -341,9 +354,9 @@ public partial class SettingsForm : Form
     {
         var mode = _modeController.IsTabletMode ? "平板模式" : "桌面模式";
         var allDevices = _keyboardWatcher.GetAllKeyboardDevices();
-        var activeCount = allDevices.Count(d => !d.Filtered);
+        var activeCount = allDevices.Count(d => !d.Filtered && !d.Excluded);
         var totalCount = allDevices.Count;
-        _lblStatus.Text = $"当前模式: {mode}\n检测到 {activeCount} 个键盘 (共 {totalCount} 个设备)";
+        _lblStatus.Text = $"当前模式: {mode}\n检测到 {activeCount} 个有效键盘 (共 {totalCount} 个设备)";
     }
 
     private void BtnRefresh_Click(object? sender, EventArgs e)
@@ -391,6 +404,9 @@ public partial class SettingsForm : Form
         }
 
         _settings.Save();
+
+        // 更新排除列表到监听器
+        _keyboardWatcher.UpdateExcludedDevices(_settings.ExcludedDeviceIds);
 
         // 设置开机自启动
         SetStartupRegistry(_settings.RunAtStartup);
