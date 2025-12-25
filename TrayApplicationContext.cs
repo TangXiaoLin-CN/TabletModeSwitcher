@@ -12,8 +12,9 @@ public class TrayApplicationContext : ApplicationContext
     private readonly TabletModeController _modeController;
     private AppSettings _settings;
     private readonly System.Windows.Forms.Timer _switchTimer;
+    private readonly System.Windows.Forms.Timer _pollTimer;  // 定时轮询键盘状态
 
-    private bool _pendingSwitchToDesktop = false;
+    private int _lastKeyboardCount = -1;  // 上次检测到的键盘数量
 
     public TrayApplicationContext()
     {
@@ -28,6 +29,10 @@ public class TrayApplicationContext : ApplicationContext
         // 防抖动定时器
         _switchTimer = new System.Windows.Forms.Timer { Interval = _settings.SwitchDelayMs };
         _switchTimer.Tick += OnSwitchTimerTick;
+
+        // 定时轮询键盘状态（每2秒检查一次）
+        _pollTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+        _pollTimer.Tick += OnPollTimerTick;
 
         // 创建系统托盘图标
         _trayIcon = new NotifyIcon
@@ -49,6 +54,9 @@ public class TrayApplicationContext : ApplicationContext
         // 启动键盘监听
         _keyboardWatcher.Start();
 
+        // 记录初始键盘数量
+        _lastKeyboardCount = _keyboardWatcher.ConnectedKeyboardCount;
+
         // 根据当前键盘状态初始化模式
         if (_settings.AutoSwitchEnabled)
         {
@@ -61,6 +69,9 @@ public class TrayApplicationContext : ApplicationContext
                 _modeController.SwitchToTabletMode();
             }
         }
+
+        // 启动定时轮询
+        _pollTimer.Start();
 
         UpdateTrayIconText();
         ShowNotification("平板模式切换器", "程序已启动，正在后台运行。");
@@ -232,26 +243,24 @@ public class TrayApplicationContext : ApplicationContext
     {
         if (!_settings.AutoSwitchEnabled) return;
 
-        System.Diagnostics.Debug.WriteLine($"键盘连接: {e.DeviceId}");
-
-        // 使用防抖定时器切换到桌面模式
-        _pendingSwitchToDesktop = true;
-        _switchTimer.Stop();
-        _switchTimer.Start();
+        System.Diagnostics.Debug.WriteLine($"事件: 键盘连接 {e.DeviceId}");
+        _lastKeyboardCount = _keyboardWatcher.ConnectedKeyboardCount;
+        UpdateTrayIconText();
+        SwitchModeBasedOnKeyboardState();
     }
 
     private void OnKeyboardDisconnected(object? sender, KeyboardEventArgs e)
     {
         if (!_settings.AutoSwitchEnabled) return;
 
-        System.Diagnostics.Debug.WriteLine($"键盘断开: {e.DeviceId}, 剩余: {_keyboardWatcher.ConnectedKeyboardCount}");
+        System.Diagnostics.Debug.WriteLine($"事件: 键盘断开 {e.DeviceId}, 剩余: {_keyboardWatcher.ConnectedKeyboardCount}");
+        _lastKeyboardCount = _keyboardWatcher.ConnectedKeyboardCount;
+        UpdateTrayIconText();
 
         // 只有当所有键盘都断开时才切换到平板模式
         if (_keyboardWatcher.ConnectedKeyboardCount == 0)
         {
-            _pendingSwitchToDesktop = false;
-            _switchTimer.Stop();
-            _switchTimer.Start();
+            SwitchModeBasedOnKeyboardState();
         }
     }
 
@@ -259,6 +268,27 @@ public class TrayApplicationContext : ApplicationContext
     {
         _switchTimer.Stop();
         SwitchModeBasedOnKeyboardState();
+    }
+
+    /// <summary>
+    /// 定时轮询键盘状态
+    /// </summary>
+    private void OnPollTimerTick(object? sender, EventArgs e)
+    {
+        if (!_settings.AutoSwitchEnabled) return;
+
+        // 重新扫描键盘
+        _keyboardWatcher.ScanExistingKeyboards();
+        var currentCount = _keyboardWatcher.ConnectedKeyboardCount;
+
+        // 如果键盘数量发生变化，切换模式
+        if (currentCount != _lastKeyboardCount)
+        {
+            System.Diagnostics.Debug.WriteLine($"轮询检测到键盘变化: {_lastKeyboardCount} -> {currentCount}");
+            _lastKeyboardCount = currentCount;
+            UpdateTrayIconText();
+            SwitchModeBasedOnKeyboardState();
+        }
     }
 
     /// <summary>
@@ -394,6 +424,7 @@ public class TrayApplicationContext : ApplicationContext
     {
         if (disposing)
         {
+            _pollTimer.Dispose();
             _switchTimer.Dispose();
             _keyboardWatcher.Dispose();
             _trayIcon.Dispose();
