@@ -166,6 +166,13 @@ public class TrayApplicationContext : ApplicationContext
         {
             _keyboardWatcher.ScanExistingKeyboards();
             UpdateTrayIconText();
+
+            // 根据当前键盘状态切换模式
+            if (_settings.AutoSwitchEnabled)
+            {
+                SwitchModeBasedOnKeyboardState();
+            }
+
             ShowNotification("扫描完成", $"检测到 {_keyboardWatcher.ConnectedKeyboardCount} 个键盘设备");
         });
         menu.Items.Add(rescanItem);
@@ -225,19 +232,19 @@ public class TrayApplicationContext : ApplicationContext
     {
         if (!_settings.AutoSwitchEnabled) return;
 
-        // 检查是否在排除列表中
-        if (_settings.ExcludedDeviceIds.Contains(e.DeviceId)) return;
+        System.Diagnostics.Debug.WriteLine($"键盘连接: {e.DeviceId}");
 
+        // 使用防抖定时器切换到桌面模式
         _pendingSwitchToDesktop = true;
         _switchTimer.Stop();
         _switchTimer.Start();
-
-        System.Diagnostics.Debug.WriteLine($"键盘连接: {e.Description}，将切换到桌面模式");
     }
 
     private void OnKeyboardDisconnected(object? sender, KeyboardEventArgs e)
     {
         if (!_settings.AutoSwitchEnabled) return;
+
+        System.Diagnostics.Debug.WriteLine($"键盘断开: {e.DeviceId}, 剩余: {_keyboardWatcher.ConnectedKeyboardCount}");
 
         // 只有当所有键盘都断开时才切换到平板模式
         if (_keyboardWatcher.ConnectedKeyboardCount == 0)
@@ -245,22 +252,35 @@ public class TrayApplicationContext : ApplicationContext
             _pendingSwitchToDesktop = false;
             _switchTimer.Stop();
             _switchTimer.Start();
-
-            System.Diagnostics.Debug.WriteLine("所有键盘已断开，将切换到平板模式");
         }
     }
 
     private void OnSwitchTimerTick(object? sender, EventArgs e)
     {
         _switchTimer.Stop();
+        SwitchModeBasedOnKeyboardState();
+    }
 
-        if (_pendingSwitchToDesktop)
+    /// <summary>
+    /// 根据当前键盘连接状态切换模式
+    /// </summary>
+    private void SwitchModeBasedOnKeyboardState()
+    {
+        if (_keyboardWatcher.ConnectedKeyboardCount > 0)
         {
-            _modeController.SwitchToDesktopMode();
+            // 有键盘连接，切换到桌面模式
+            if (_modeController.IsTabletMode)
+            {
+                _modeController.SwitchToDesktopMode();
+            }
         }
         else
         {
-            _modeController.SwitchToTabletMode();
+            // 无键盘连接，切换到平板模式
+            if (!_modeController.IsTabletMode)
+            {
+                _modeController.SwitchToTabletMode();
+            }
         }
     }
 
