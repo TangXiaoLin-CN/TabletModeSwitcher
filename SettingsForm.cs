@@ -42,11 +42,8 @@ public partial class SettingsForm : Form
 
         // 窗口设置
         Text = "平板模式切换器 - 设置";
-        AutoScaleMode = AutoScaleMode.Dpi;
-        AutoScaleDimensions = new SizeF(96F, 96F);
         Size = new Size(500, 520);
-        MinimumSize = new Size(450, 480);
-        FormBorderStyle = FormBorderStyle.Sizable;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Microsoft YaHei UI", 9F);
@@ -184,8 +181,7 @@ public partial class SettingsForm : Form
         {
             Location = new Point(20, 40),
             Size = new Size(300, 120),
-            SelectionMode = SelectionMode.One,
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            SelectionMode = SelectionMode.One
         };
         tabDevices.Controls.Add(_lstKeyboards);
 
@@ -193,8 +189,7 @@ public partial class SettingsForm : Form
         {
             Text = "刷新列表",
             Location = new Point(330, 40),
-            Size = new Size(90, 30),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right
+            Size = new Size(90, 30)
         };
         _btnRefresh.Click += BtnRefresh_Click;
         tabDevices.Controls.Add(_btnRefresh);
@@ -203,8 +198,7 @@ public partial class SettingsForm : Form
         {
             Text = "添加到排除 ↓",
             Location = new Point(330, 80),
-            Size = new Size(90, 30),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right
+            Size = new Size(90, 30)
         };
         _btnAddExclude.Click += BtnAddExclude_Click;
         tabDevices.Controls.Add(_btnAddExclude);
@@ -222,8 +216,7 @@ public partial class SettingsForm : Form
         {
             Location = new Point(20, 195),
             Size = new Size(300, 120),
-            SelectionMode = SelectionMode.One,
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            SelectionMode = SelectionMode.One
         };
         tabDevices.Controls.Add(_lstExcluded);
 
@@ -231,8 +224,7 @@ public partial class SettingsForm : Form
         {
             Text = "移除排除",
             Location = new Point(330, 195),
-            Size = new Size(90, 30),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right
+            Size = new Size(90, 30)
         };
         _btnRemoveExclude.Click += BtnRemoveExclude_Click;
         tabDevices.Controls.Add(_btnRemoveExclude);
@@ -243,8 +235,7 @@ public partial class SettingsForm : Form
             Text = "提示: 如果您有某些键盘设备不想触发模式切换（如蓝牙遥控器等），\n可以将其添加到排除列表。",
             Location = new Point(20, 330),
             Size = new Size(400, 40),
-            ForeColor = Color.Gray,
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            ForeColor = Color.Gray
         };
         tabDevices.Controls.Add(lblHint);
 

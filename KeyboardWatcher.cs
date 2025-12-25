@@ -314,10 +314,6 @@ public class KeyboardWatcher : IDisposable
         if (upperDeviceId.StartsWith("SW\\"))
             return true;
 
-        // 排除 ACPI 内置键盘（如 Surface 触摸键盘驱动）
-        if (upperDeviceId.StartsWith("ACPI\\"))
-            return true;
-
         // 排除 SWD 软件设备
         if (upperDeviceId.StartsWith("SWD\\"))
             return true;
@@ -326,26 +322,16 @@ public class KeyboardWatcher : IDisposable
         if (upperDeviceId.Contains("HID_DEVICE_SYSTEM_KEYBOARD"))
             return true;
 
-        // 排除 HID 设备中不是真正键盘的（如游戏手柄等）
-        // 真正的 USB/蓝牙键盘通常以 HID\VID_ 或 BTHENUM\ 开头
-        if (upperDeviceId.StartsWith("HID\\") &&
-            !upperDeviceId.Contains("VID_") &&
-            !upperDeviceId.Contains("BTHENUM"))
-            return true;
-
         // 排除远程桌面键盘
         if (upperDeviceId.Contains("RDP_") || upperDeviceId.Contains("YOURREMOTE") ||
-            lowerDesc.Contains("remote") || lowerDesc.Contains("terminal"))
+            lowerDesc.Contains("remote desktop") || lowerDesc.Contains("terminal server"))
             return true;
 
-        // 排除虚拟键盘
+        // 排除虚拟键盘关键词
         if (lowerDesc.Contains("virtual"))
             return true;
 
-        // 排除触摸键盘
-        if (lowerDesc.Contains("touch") || lowerDesc.Contains("on-screen"))
-            return true;
-
+        // 不再过滤 ACPI 和 HID 设备，因为有些真实键盘使用这些前缀
         return false;
     }
 
