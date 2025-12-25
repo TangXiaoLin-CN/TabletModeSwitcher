@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace TabletModeSwitcher;
 
 internal static class Program

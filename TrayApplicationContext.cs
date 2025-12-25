@@ -209,7 +209,7 @@ public class TrayApplicationContext : ApplicationContext
         // 设置
         var settingsItem = new ToolStripMenuItem("设置...", null, (s, e) =>
         {
-            OpenSettingsForm();
+            OpenSettingsWindow();
         });
         menu.Items.Add(settingsItem);
 
@@ -350,25 +350,27 @@ public class TrayApplicationContext : ApplicationContext
     private void OnTrayIconDoubleClick(object? sender, EventArgs e)
     {
         // 双击打开设置窗口
-        OpenSettingsForm();
+        OpenSettingsWindow();
     }
 
-    private SettingsForm? _settingsForm;
+    private SettingsWindow? _settingsWindow;
 
-    private void OpenSettingsForm()
+    private void OpenSettingsWindow()
     {
         // 如果设置窗口已打开，则激活它
-        if (_settingsForm != null && !_settingsForm.IsDisposed)
+        if (_settingsWindow != null && _settingsWindow.IsLoaded)
         {
-            _settingsForm.Activate();
+            _settingsWindow.Activate();
             return;
         }
 
         // 每次打开设置窗口时从文件重新加载配置
         _settings = AppSettings.Load();
 
-        _settingsForm = new SettingsForm(_settings, _keyboardWatcher, _modeController);
-        if (_settingsForm.ShowDialog() == DialogResult.OK)
+        _settingsWindow = new SettingsWindow(_settings, _keyboardWatcher, _modeController);
+        _settingsWindow.ShowDialog();
+
+        if (_settingsWindow.SavedSuccessfully)
         {
             // 重新加载设置
             _switchTimer.Interval = _settings.SwitchDelayMs;
@@ -390,7 +392,7 @@ public class TrayApplicationContext : ApplicationContext
 
             UpdateTrayIconText();
         }
-        _settingsForm = null;
+        _settingsWindow = null;
     }
 
     private void SetStartupRegistry(bool enable)

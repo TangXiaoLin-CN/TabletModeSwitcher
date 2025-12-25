@@ -1,0 +1,170 @@
+<Window x:Class="TabletModeSwitcher.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="平板模式切换器 - 设置"
+        Height="520" Width="500"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#F3F3F3">
+
+    <Window.Resources>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,8,0,8"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#106EBE"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="#E1E1E1"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0" Margin="12">
+            <!-- 常规设置 -->
+            <TabItem Header="常规设置">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel>
+                        <CheckBox x:Name="chkAutoSwitch" Content="启用自动模式切换"/>
+                        <CheckBox x:Name="chkShowNotifications" Content="显示通知提示"/>
+                        <CheckBox x:Name="chkRunAtStartup" Content="开机自动启动"/>
+                        <CheckBox x:Name="chkStartMinimized" Content="启动时最小化到系统托盘"/>
+                        <CheckBox x:Name="chkUseTaskbarAutoHide" Content="同时控制任务栏自动隐藏 (用于台式机测试)"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,16,0,8">
+                            <TextBlock Text="模式切换延迟 (毫秒):" VerticalAlignment="Center" FontSize="14"/>
+                            <TextBox x:Name="txtSwitchDelay" Width="80" Margin="12,0,0,0"
+                                     VerticalContentAlignment="Center" FontSize="14" Padding="8,4"/>
+                            <TextBlock Text="(防止频繁切换)" VerticalAlignment="Center"
+                                       Foreground="Gray" Margin="8,0,0,0" FontSize="12"/>
+                        </StackPanel>
+
+                        <GroupBox Header="当前状态" Margin="0,16,0,0" Padding="12">
+                            <TextBlock x:Name="lblStatus" FontSize="14" TextWrapping="Wrap"/>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 设备管理 -->
+            <TabItem Header="设备管理">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="已检测到的键盘设备:" FontSize="14" Margin="0,0,0,8"/>
+                    <ListBox x:Name="lstKeyboards" Grid.Row="1" Grid.Column="0"
+                             Margin="0,0,12,0" FontSize="13"/>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
+                        <Button Content="刷新列表" Click="BtnRefresh_Click" Width="100" Margin="0,0,0,8"/>
+                        <Button Content="添加到排除 ↓" Click="BtnAddExclude_Click" Width="100"
+                                Style="{StaticResource SecondaryButton}"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="3" Grid.ColumnSpan="2"
+                               Text="排除的设备 (这些设备不会触发模式切换):"
+                               FontSize="14" Margin="0,16,0,8"/>
+                    <ListBox x:Name="lstExcluded" Grid.Row="4" Grid.Column="0"
+                             Margin="0,0,12,0" FontSize="13"/>
+
+                    <StackPanel Grid.Row="4" Grid.Column="1" VerticalAlignment="Top">
+                        <Button Content="移除排除" Click="BtnRemoveExclude_Click" Width="100"
+                                Style="{StaticResource SecondaryButton}"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="5" Grid.ColumnSpan="2"
+                               Text="提示: 如果您有某些键盘设备不想触发模式切换（如蓝牙遥控器等），可以将其添加到排除列表。"
+                               FontSize="12" Foreground="Gray" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                </Grid>
+            </TabItem>
+
+            <!-- 关于 -->
+            <TabItem Header="关于">
+                <StackPanel Margin="20">
+                    <TextBlock Text="平板模式切换器" FontSize="24" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock Text="版本 1.0.0" FontSize="14" Foreground="Gray" Margin="0,0,0,20"/>
+
+                    <TextBlock TextWrapping="Wrap" FontSize="14" LineHeight="24">
+                        自动检测键盘连接并切换 Windows 11 平板模式任务栏。
+                        <LineBreak/><LineBreak/>
+                        <Run FontWeight="SemiBold">功能说明:</Run>
+                        <LineBreak/>• 监听 USB 和蓝牙键盘的连接/断开
+                        <LineBreak/>• 键盘连接时自动切换到桌面模式（固定任务栏）
+                        <LineBreak/>• 键盘断开时自动切换到平板模式（可收起任务栏）
+                        <LineBreak/><LineBreak/>
+                        <Run FontWeight="SemiBold">工作原理:</Run>
+                        <LineBreak/>通过修改系统注册表 ConvertibleSlateMode 值来模拟 Surface 键盘盖发送的硬件信号。
+                    </TextBlock>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,0,12,12">
+            <Button Content="保存" Click="BtnSave_Click" Width="80" Margin="0,0,8,0"/>
+            <Button Content="取消" Click="BtnCancel_Click" Width="80" Style="{StaticResource SecondaryButton}"/>
+        </StackPanel>
+    </Grid>
+</Window>
