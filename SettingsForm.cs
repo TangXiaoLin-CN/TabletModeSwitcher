@@ -404,7 +404,7 @@ public partial class SettingsForm : Form
 
     private void BtnSave_Click(object? sender, EventArgs e)
     {
-        // 保存设置
+        // 保存基本设置
         _settings.AutoSwitchEnabled = _chkAutoSwitch.Checked;
         _settings.ShowNotifications = _chkShowNotifications.Checked;
         _settings.RunAtStartup = _chkRunAtStartup.Checked;
@@ -412,21 +412,22 @@ public partial class SettingsForm : Form
         _settings.UseTaskbarAutoHide = _chkUseTaskbarAutoHide.Checked;
         _settings.SwitchDelayMs = (int)_numSwitchDelay.Value;
 
-        // 保存排除列表
-        _settings.ExcludedDeviceIds.Clear();
-        foreach (var item in _lstExcluded.Items)
+        // 保存排除列表 - 直接创建新列表
+        var excludedList = new List<string>();
+        for (int i = 0; i < _lstExcluded.Items.Count; i++)
         {
-            if (item is string deviceId)
+            var item = _lstExcluded.Items[i];
+            if (item != null)
             {
-                _settings.ExcludedDeviceIds.Add(deviceId);
+                excludedList.Add(item.ToString()!);
             }
         }
+        _settings.ExcludedDeviceIds = excludedList;
 
         // 保存到文件
         if (!_settings.Save())
         {
-            MessageBox.Show("保存设置失败，请检查权限", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
+            return; // Save() 已经显示了错误消息
         }
 
         // 更新排除列表到监听器
@@ -434,6 +435,8 @@ public partial class SettingsForm : Form
 
         // 设置开机自启动
         SetStartupRegistry(_settings.RunAtStartup);
+
+        MessageBox.Show($"设置已保存\n排除设备数量: {_settings.ExcludedDeviceIds.Count}", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
         DialogResult = DialogResult.OK;
         Close();
