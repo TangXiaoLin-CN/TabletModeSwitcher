@@ -70,7 +70,7 @@ public class AppSettings
     /// <summary>
     /// 保存配置
     /// </summary>
-    public void Save()
+    public bool Save()
     {
         try
         {
@@ -82,10 +82,14 @@ public class AppSettings
 
             var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(SettingsPath, json);
+            System.Diagnostics.Debug.WriteLine($"配置已保存到: {SettingsPath}");
+            System.Diagnostics.Debug.WriteLine($"排除设备数量: {ExcludedDeviceIds.Count}");
+            return true;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"保存配置失败: {ex.Message}");
+            return false;
         }
     }
 }

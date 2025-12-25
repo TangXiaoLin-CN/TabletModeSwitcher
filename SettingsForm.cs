@@ -317,6 +317,9 @@ public partial class SettingsForm : Form
             _lstExcluded.Items.Add(deviceId);
         }
 
+        // 同步排除列表到 KeyboardWatcher
+        _keyboardWatcher.UpdateExcludedDevices(_settings.ExcludedDeviceIds);
+
         UpdateStatus();
     }
 
@@ -409,13 +412,22 @@ public partial class SettingsForm : Form
         _settings.UseTaskbarAutoHide = _chkUseTaskbarAutoHide.Checked;
         _settings.SwitchDelayMs = (int)_numSwitchDelay.Value;
 
+        // 保存排除列表
         _settings.ExcludedDeviceIds.Clear();
-        foreach (string deviceId in _lstExcluded.Items)
+        foreach (var item in _lstExcluded.Items)
         {
-            _settings.ExcludedDeviceIds.Add(deviceId);
+            if (item is string deviceId)
+            {
+                _settings.ExcludedDeviceIds.Add(deviceId);
+            }
         }
 
-        _settings.Save();
+        // 保存到文件
+        if (!_settings.Save())
+        {
+            MessageBox.Show("保存设置失败，请检查权限", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
 
         // 更新排除列表到监听器
         _keyboardWatcher.UpdateExcludedDevices(_settings.ExcludedDeviceIds);
