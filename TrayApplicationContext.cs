@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace TabletModeSwitcher;
 
 /// <summary>
@@ -77,21 +79,32 @@ public class TrayApplicationContext : ApplicationContext
 
     private Icon CreateIcon()
     {
-        // 创建一个简单的图标（16x16 蓝色方块）
+        // 尝试从文件加载图标
+        try
+        {
+            var iconPath = Program.GetIconPath();
+            if (File.Exists(iconPath))
+            {
+                return new Icon(iconPath, 16, 16);
+            }
+        }
+        catch
+        {
+            // 忽略，使用备用图标
+        }
+
+        // 备用：创建简单的程序图标
         using var bitmap = new Bitmap(16, 16);
         using var g = Graphics.FromImage(bitmap);
 
-        // 绘制一个键盘样式的图标
         g.Clear(Color.Transparent);
-        g.FillRectangle(Brushes.DodgerBlue, 1, 4, 14, 10);
-        g.DrawRectangle(Pens.White, 1, 4, 13, 9);
 
-        // 绘制键盘按键
-        for (int i = 0; i < 4; i++)
-        {
-            g.FillRectangle(Brushes.White, 3 + i * 3, 6, 2, 2);
-            g.FillRectangle(Brushes.White, 3 + i * 3, 10, 2, 2);
-        }
+        // 平板形状
+        g.FillRectangle(Brushes.DodgerBlue, 1, 2, 14, 8);
+        g.DrawRectangle(Pens.White, 1, 2, 13, 7);
+
+        // 键盘底座
+        g.FillRectangle(Brushes.Gray, 2, 11, 12, 3);
 
         return Icon.FromHandle(bitmap.GetHicon());
     }

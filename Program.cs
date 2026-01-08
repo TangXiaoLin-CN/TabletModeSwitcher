@@ -31,6 +31,9 @@ internal static class Program
             // 配置应用程序
             ApplicationConfiguration.Initialize();
 
+            // 确保图标文件存在
+            EnsureIconExists();
+
             // 设置未处理异常处理
             Application.ThreadException += OnThreadException;
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -85,6 +88,43 @@ internal static class Program
         catch
         {
             // 忽略日志写入失败
+        }
+    }
+
+    /// <summary>
+    /// 获取应用程序图标路径
+    /// </summary>
+    public static string GetIconPath()
+    {
+        var appDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TabletModeSwitcher");
+        return Path.Combine(appDir, "app.ico");
+    }
+
+    /// <summary>
+    /// 确保图标文件存在，如果不存在则生成
+    /// </summary>
+    private static void EnsureIconExists()
+    {
+        try
+        {
+            var iconPath = GetIconPath();
+            var iconDir = Path.GetDirectoryName(iconPath);
+
+            if (!Directory.Exists(iconDir))
+            {
+                Directory.CreateDirectory(iconDir!);
+            }
+
+            if (!File.Exists(iconPath))
+            {
+                IconGenerator.GenerateIconFile(iconPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"生成图标失败: {ex.Message}");
         }
     }
 }
