@@ -41,3 +41,6 @@ settings.json
 
 # Test results
 TestResults/
+
+# Tools
+tools/
