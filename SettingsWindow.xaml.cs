@@ -1,5 +1,4 @@
 using System.Windows;
-using Microsoft.Win32;
 
 namespace TabletModeSwitcher;
 
@@ -177,27 +176,9 @@ public partial class SettingsWindow : Window
 
     private void SetStartupRegistry(bool enable)
     {
-        const string keyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-        const string valueName = "TabletModeSwitcher";
-
-        try
+        if (!StartupTaskManager.SetStartup(enable))
         {
-            using var key = Registry.CurrentUser.OpenSubKey(keyPath, true);
-            if (key == null) return;
-
-            if (enable)
-            {
-                var exePath = System.Windows.Forms.Application.ExecutablePath;
-                key.SetValue(valueName, $"\"{exePath}\"");
-            }
-            else
-            {
-                key.DeleteValue(valueName, false);
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Windows.MessageBox.Show($"设置开机自启动失败: {ex.Message}", "错误",
+            System.Windows.MessageBox.Show("设置开机自启动失败", "错误",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
